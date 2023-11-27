@@ -29,10 +29,14 @@ while True:
         nombre_archivo_csv = "heroes.csv"
         lista_personajes_csv = leer_csv(nombre_archivo_csv)
         if lista_personajes_csv:
-            lista_personajes_csv = ordenar_heroes_por_clave(lista_personajes_csv, "altura")
+            lista_personajes_csv = ordenar_heroes_ascendente(lista_personajes_csv, "altura")
             print("Lista de héroes ordenados por altura ASC:")
+            print(f"{'Nombre':<20}{'Altura':<10}")
+            print('-' * 30)
             for heroe in lista_personajes_csv:
-                print(heroe)
+                nombre = heroe['nombre']
+                altura = heroe.get('altura', '')
+                print(f"{nombre:<20}{altura:<10}")
 
     elif opcion == '4':
         # Generar JSON
@@ -45,10 +49,15 @@ while True:
         nombre_archivo_json = "heroes.json"
         lista_personajes_json = leer_json(nombre_archivo_json, "heroes")
         if lista_personajes_json:
-            lista_personajes_json = ordenar_heroes_por_clave(lista_personajes_json, "peso")
+            lista_personajes_json = ordenar_heroes_descendente(lista_personajes_json, "peso")
             print("Lista de héroes ordenados por peso DESC:")
+            print(f"{'Nombre':<20}{'Peso':<10}")
+            print('-' * 30)
             for heroe in lista_personajes_json:
-                print(heroe)
+                nombre = heroe['nombre']
+                peso = heroe.get('peso', '')
+                print(f"{nombre:<20}{peso:<10}")
+
 
     elif opcion == '6':
         # Ordenar lista por fuerza (preguntar al usuario)

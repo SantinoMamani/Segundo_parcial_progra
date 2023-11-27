@@ -17,7 +17,7 @@ def extraer_iniciales (nombre_heroe:str):
         return "N/A"
 
     nombre_limpio = nombre_heroe.replace('-', ' ').replace("the", "")
-
+    #divide la cadena en palabras separadas por espacios en blanco (espacios, tabulaciones, saltos de línea, etc.).
     palabras = nombre_limpio.split()
     iniciales = [palabra[0].upper() for palabra in palabras if palabra.isalpha()]
 
@@ -42,7 +42,7 @@ def obtener_dato_formato(dato:str):
 
         dato = dato.lower()
         dato = re.sub('[a-zA-Z0-9]+', '_', dato)
-
+        #secuencias de caracteres alfanuméricos en la cadena dato con un guion bajo.
         return dato
     else:
         return False
@@ -64,7 +64,7 @@ def stark_imprimir_nombre_con_iniciales(lista_heroes:str):
         nombre = heroe["nombre"]
         iniciales = extraer_iniciales(nombre)
         nombres.append(f"{nombre}({iniciales})")
-
+    #todas estas cadenas con guiones medios y las imprime
     resultado = "-".join(nombres)
     print(resultado)
 
@@ -131,11 +131,14 @@ Retorna:
 """
 
 def stark_generar_codigo_heroes(lista_heroes: list):
+    #itera sobre la lista lista_heroes y al mismo tiempo obtiene el índice y el valor correspondiente de cada elemento en la lista
     for personaje, heroe in enumerate(lista_heroes, start=1):
         if isinstance(heroe, dict) and 'nombre' in heroe:
+            # Si el heroe es un diccionario y tiene la clave 'nombre'
             codigo = generar_codigo_heroe(heroe, personaje)
             print(f"*{heroe['nombre']}({extraer_iniciales(heroe['nombre'])})|  {codigo}")
         else:
+            # Si el heroe no es un diccionario o no tiene la clave 'nombre'
             return False
 
 """
@@ -149,10 +152,13 @@ Retorna:
 """
 
 def sanitizar_entero(numero_str: str):
+    #se inicia un bloque try
     try:
         numero_entero = int(numero_str)
         if numero_entero >= 0:
             return numero_entero
+        
+    # Captura excepciones de tipo ValueError o TypeError. ocurren si la conversión a entero no es posible debido
     except (ValueError, TypeError):
         pass
 
@@ -289,6 +295,7 @@ Retorna:
 """
 
 def stark_imprimir_indice_nombre(lista_heroes:list):
+    #itera sobre la lista lista_heroes y al mismo tiempo obtiene el índice y el valor correspondiente de cada elemento en la lista
     for i, heroe in enumerate(lista_heroes, start=1):
         nombre = heroe.get("nombre", "")
         iniciales = extraer_iniciales(nombre)

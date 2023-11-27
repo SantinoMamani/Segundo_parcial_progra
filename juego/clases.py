@@ -86,7 +86,7 @@ class AutoEnemigo3:
     def update(self):
         self.rect.x -= 5  # Mueve el auto hacia la izquierda
 
-
+#crea mis propias clases de sprites personalizados para representar diferentes elementos
 class AutoJugador(pygame.sprite.Sprite):
     def __init__(self, x, y, pantalla):
         super().__init__()

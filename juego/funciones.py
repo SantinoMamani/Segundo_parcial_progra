@@ -581,6 +581,7 @@ def iniciar_nivel_2():
     pygame.init()
     global puntaje_global
     global vidas_global
+    global nivel_2_completado
     pantalla = pygame.display.set_mode([1100, 440])
     pygame.display.set_caption("Carreras")
 
@@ -620,6 +621,7 @@ def iniciar_nivel_2():
 
     # Definicion de una variable para controlar la visualización de la imagen "Nivel Completado"
     mostrar_imagen_nivel_completado_flag = False
+    nivel_2_completado = False
     pausado = False
     colision = False
     todos_autos_cruzados = False
@@ -763,6 +765,7 @@ def iniciar_nivel_2():
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mostrar_imagen_nivel_completado_flag = False
+                    nivel_2_completado = True
                     
         pygame.display.flip()
         
