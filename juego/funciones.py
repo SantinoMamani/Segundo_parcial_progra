@@ -1,5 +1,5 @@
-import pygame,random,sys
-from clases import AutoEnemigo, AutoJugador, AutoEnemigo2, AutoEnemigo3
+import pygame, random, math, time, sys
+from clases import AutoEnemigo, AutoJugador, AutoEnemigo2, AutoEnemigo3, Fondo
 from ranking import crear_tabla_carreras, insertar_jugadores, obtener_ranking
 
 crear_tabla_carreras()
@@ -244,6 +244,11 @@ def ingresar_nombre(puntaje_global):
         pantalla.blit(texto, (textbox_rect.x + 5, textbox_rect.y - 5))
         pygame.display.flip()
 
+def draw_explosiones(explosiones, pantalla):
+    for explosion in explosiones:
+        pantalla.blit(explosion.image, explosion.rect.topleft)
+
+
 
 """
 Muestra una pantalla de ranking con los mejores puntajes alcanzados por los jugadores. Permite al jugador
@@ -342,7 +347,7 @@ def mostrar_como_jugar():
     pantalla = pygame.display.set_mode([800, 600])
     pygame.display.set_caption("Cómo Jugar")
 
-    imagen_instrucciones = pygame.image.load("pantallainstrucciones.png")
+    imagen_instrucciones = pygame.image.load("pantallainstrucciones.jpg")
     imagen_instrucciones = pygame.transform.scale(imagen_instrucciones, (800, 600))
     instrucciones = True
     
@@ -375,7 +380,6 @@ def iniciar_nivel_1():
     global nivel_1_completado
     pantalla = pygame.display.set_mode([1100, 440])
     pygame.display.set_caption("Carreras")
-
     imagen = pygame.image.load("Road.jpg")
     imagen = pygame.transform.scale(imagen, (400, 1100))
     imagen = pygame.transform.rotate(imagen, 90)
@@ -388,7 +392,7 @@ def iniciar_nivel_1():
     imagen_explosion = pygame.transform.scale(imagen_explosion, (100, 100))
     sonido_explosion = pygame.mixer.Sound("explosion.mp3")
     sonido_explosion.set_volume(0.5)
-    tiempo_explosion = 2000  # Duración de la explosión en milisegundos (1 segundo)
+    tiempo_explosion = 1000  # Duración de la explosión en milisegundos (1 segundo)
     # Definicion de las coordenadas 'y' para las posiciones de aparición de los autos
     coordenadas_y = [60, 250]
     puntaje_global = 0
@@ -406,7 +410,11 @@ def iniciar_nivel_1():
     tecla_abajo_presionada = False
     tecla_derecha_presionada = False
     tecla_izquierda_presionada = False
-    
+    tiempo_entre_frames = 100  # 100 milisegundos entre cada frame
+    fondo_ancho = imagen.get_width()
+    scroll = 0
+    velocidad_scroll = 5
+    fondo = Fondo(imagen, velocidad_scroll)
     velocidad_maxima = 5
     velocidad_actual = 0  
     velocidad_aceleracion = 0.1  # Cuánto aumenta la velocidad con cada cuadro
@@ -415,9 +423,27 @@ def iniciar_nivel_1():
     # Definicion de una variable para controlar la visualización de la imagen "Nivel Completado"
     mostrar_imagen_nivel_completado_flag = False
     pausado = False
-    colision = False
+    colision = False  # Bandera para detectar colisiones
+    vidas_perdidas = 0  # Contador de vidas perdidas después de la explosión
+    explosion_en_curso = False
+    explosion = None
     nivel_1_completado = False
     todos_autos_cruzados = False
+    
+    imagenes_explosion = [
+        pygame.image.load("0.png"),
+        pygame.image.load("1.png"),
+        pygame.image.load("2.png"),
+        pygame.image.load("3.png"),
+        pygame.image.load("4.png"),
+        pygame.image.load("5.png"),
+        pygame.image.load("6.png"),
+        pygame.image.load("7.png"),
+        pygame.image.load("8.png"),
+        pygame.image.load("9.png"),
+        pygame.image.load("10.png"),
+]
+    
     while bandera_correr:
         lista_eventos = pygame.event.get()
         for event in lista_eventos:
@@ -452,21 +478,33 @@ def iniciar_nivel_1():
         else: """
             # Lista de autos enemigos a eliminar
         autos_a_eliminar = []
-
+        
+        scroll += velocidad_scroll
+        if scroll >= fondo_ancho:
+            scroll = 0
+        
         for i, auto_enemigo in enumerate(autos_enemigos):
             if auto_jugador.rect_jugador.colliderect(auto_enemigo.rect_enemigo):
                 vidas_global -= 1  # Reduce una vida
-                #vidas_restantes = vidas
                 pygame.mixer.music.pause()
                 sonido_explosion.play()
-                # Muestra la imagen de choque
-                x = auto_enemigo.rect_enemigo.centerx - imagen_explosion.get_width() // 2
-                y = auto_enemigo.rect_enemigo.centery - imagen_explosion.get_height() // 2
-                pantalla.blit(imagen_explosion, (x, y))
-                pygame.display.flip()
-                pygame.time.delay(tiempo_explosion)  # Pausa el juego para mostrar la explosión
+
+                # Obtén las coordenadas para la explosión
+                x = auto_enemigo.rect_enemigo.centerx - imagenes_explosion[0].get_width() // 2
+                y = auto_enemigo.rect_enemigo.centery - imagenes_explosion[0].get_height() // 2
+
+                # Muestra cada frame de la explosión en secuencia
+                for frame in imagenes_explosion:
+                    pantalla.blit(frame, (x, y))
+                    pygame.display.flip()
+                    pygame.time.delay(tiempo_entre_frames)  # Ajusta el tiempo entre frames según sea necesario
+                
+                # Pausa el juego después de mostrar la secuencia de explosión
+                pygame.time.delay(tiempo_explosion)
+
                 autos_a_eliminar.append(i)  # Agrega el auto enemigo a la lista de eliminación
                 puntaje_global -= 10  # Descuenta 10 puntos por colisión
+
         pygame.mixer.music.unpause()        
         # Elimina autos enemigos que colisionaron
         autos_enemigos = [auto for i, auto in enumerate(autos_enemigos) if i not in autos_a_eliminar]
@@ -476,25 +514,29 @@ def iniciar_nivel_1():
             if not colision and auto_jugador.rect_jugador.colliderect(auto_enemigo.rect_enemigo):
                 colision = True
         
-        if vidas_global <= 0:
-            mostrar_game_over(pantalla, puntaje_global)
-            pygame.quit()
-            sys.exit()
+            if vidas_global <= 0:
+                mostrar_game_over(pantalla, puntaje_global)
+                pygame.quit()
+                sys.exit()
+
+        
+
             
         #Verifca si sobrepasa a un auto enemigo
         for auto_enemigo in autos_enemigos:
             if not autos_adelantados.get(auto_enemigo, False) and auto_enemigo.rect_enemigo.left + auto_enemigo.rect_enemigo.width < auto_jugador.rect_jugador.left:
                 puntaje_global += 20  # Suma 20 puntos por sobrepasar totalmente al auto enemigo
                 autos_adelantados[auto_enemigo] = True  # Marca el auto enemigo como adelantado      
-                
-
-        
 
         # Actualizar el auto jugador
         auto_jugador.actualizar()
+        fondo.actualizar()
 
+    
         pantalla.fill((0, 0, 0))
         pantalla.blit(imagen, (0, 0))
+        
+        fondo.dibujar(pantalla)
         
         # Dibuja el puntaje y la cantidad de vidas
         fuente = pygame.font.Font(None, 36)
@@ -597,7 +639,7 @@ def iniciar_nivel_2():
     imagen_explosion = pygame.transform.scale(imagen_explosion, (100, 100))
     sonido_explosion = pygame.mixer.Sound("explosion.mp3")
     sonido_explosion.set_volume(0.5)
-    tiempo_explosion = 2000  # Duración de la explosión en milisegundos (2 segundos)
+    tiempo_explosion = 1000  # Duración de la explosión en milisegundos (2 segundos)
     # Definicion de las coordenadas 'y' para las posiciones de aparición de los autos
     coordenadas_y = [60, 250]
     autos_enemigos_cruzados = 0
@@ -614,6 +656,13 @@ def iniciar_nivel_2():
     tecla_derecha_presionada = False
     tecla_izquierda_presionada = False
     
+    fondo_ancho = imagen.get_width()
+    scroll = 0
+    velocidad_scroll = 5
+    tiempo_entre_frames = 100
+    fondo = Fondo(imagen, velocidad_scroll)
+    velocidad_maxima = 5
+    
     velocidad_maxima = 5
     velocidad_actual = 0  
     velocidad_aceleracion = 0.1  # Cuánto aumenta la velocidad con cada cuadro
@@ -625,6 +674,21 @@ def iniciar_nivel_2():
     pausado = False
     colision = False
     todos_autos_cruzados = False
+    
+    imagenes_explosion = [
+        pygame.image.load("0.png"),
+        pygame.image.load("1.png"),
+        pygame.image.load("2.png"),
+        pygame.image.load("3.png"),
+        pygame.image.load("4.png"),
+        pygame.image.load("5.png"),
+        pygame.image.load("6.png"),
+        pygame.image.load("7.png"),
+        pygame.image.load("8.png"),
+        pygame.image.load("9.png"),
+        pygame.image.load("10.png"),
+        ]   
+    
     while bandera_correr:
         lista_eventos = pygame.event.get()
         for event in lista_eventos:
@@ -657,20 +721,32 @@ def iniciar_nivel_2():
                 
         autos_a_eliminar = []
 
+        scroll += velocidad_scroll
+        if scroll >= fondo_ancho:
+            scroll = 0
+        
         for i, auto_enemigo in enumerate(autos_enemigos):
             if auto_jugador.rect_jugador.colliderect(auto_enemigo.rect_enemigo):
                 vidas_global -= 1  # Reduce una vida
                 pygame.mixer.music.pause()
                 sonido_explosion.play()
-                # Muestra la imagen de choque
-                x = auto_enemigo.rect_enemigo.centerx - imagen_explosion.get_width() // 2
-                y = auto_enemigo.rect_enemigo.centery - imagen_explosion.get_height() // 2
-                pantalla.blit(imagen_explosion, (x, y))
-                pygame.display.flip()
-                pygame.time.delay(tiempo_explosion)  # Pausa el juego para mostrar la explosión
+
+                # Obtén las coordenadas para la explosión
+                x = auto_enemigo.rect_enemigo.centerx - imagenes_explosion[0].get_width() // 2
+                y = auto_enemigo.rect_enemigo.centery - imagenes_explosion[0].get_height() // 2
+
+                # Muestra cada frame de la explosión en secuencia
+                for frame in imagenes_explosion:
+                    pantalla.blit(frame, (x, y))
+                    pygame.display.flip()
+                    pygame.time.delay(tiempo_entre_frames)  # Ajusta el tiempo entre frames según sea necesario
+                # Pausa el juego después de mostrar la secuencia de explosión
+                pygame.time.delay(tiempo_explosion)
+
                 autos_a_eliminar.append(i)  # Agrega el auto enemigo a la lista de eliminación
                 puntaje_global -= 10  # Descuenta 10 puntos por colisión
-        pygame.mixer.music.unpause()        
+
+        pygame.mixer.music.unpause()
         # Elimina autos enemigos que colisionaron
         autos_enemigos = [auto for i, auto in enumerate(autos_enemigos) if i not in autos_a_eliminar]
 
@@ -691,12 +767,14 @@ def iniciar_nivel_2():
                 autos_adelantados[auto_enemigo] = True  # Marca el auto enemigo como adelantado      
                 
 
-
-        # Actualizar el auto jugador
         auto_jugador.actualizar()
+        fondo.actualizar()
 
+    
         pantalla.fill((0, 0, 0))
         pantalla.blit(imagen, (0, 0))
+        
+        fondo.dibujar(pantalla)
         
         # Dibuja el puntaje y la cantidad de vidas
         fuente = pygame.font.Font(None, 36)
@@ -796,7 +874,7 @@ def iniciar_nivel_3():
     imagen_explosion = pygame.transform.scale(imagen_explosion, (100, 100))
     sonido_explosion = pygame.mixer.Sound("explosion.mp3")
     sonido_explosion.set_volume(0.5)
-    tiempo_explosion = 2000  # Duración de la explosión en milisegundos (2 segundos)
+    tiempo_explosion = 1000  # Duración de la explosión en milisegundos (2 segundos)
     # Definicion de las coordenadas 'y' para las posiciones de aparición de los autos
     coordenadas_y = [60, 250]
     autos_enemigos_cruzados = 0
@@ -813,6 +891,13 @@ def iniciar_nivel_3():
     tecla_derecha_presionada = False
     tecla_izquierda_presionada = False
     
+    fondo_ancho = imagen.get_width()
+    scroll = 0
+    velocidad_scroll = 5
+    tiempo_entre_frames = 100
+    fondo = Fondo(imagen, velocidad_scroll)
+    velocidad_maxima = 5
+    
     velocidad_maxima = 5
     velocidad_actual = 0  
     velocidad_aceleracion = 0.1  # Cuánto aumenta la velocidad con cada cuadro
@@ -820,9 +905,25 @@ def iniciar_nivel_3():
 
     # Definicion de una variable para controlar la visualización de la imagen "Nivel Completado"
     mostrar_imagen_nivel_completado_flag = False
+    nivel_3_completado = False
     pausado = False
     colision = False
     todos_autos_cruzados = False
+    
+    imagenes_explosion = [
+        pygame.image.load("0.png"),
+        pygame.image.load("1.png"),
+        pygame.image.load("2.png"),
+        pygame.image.load("3.png"),
+        pygame.image.load("4.png"),
+        pygame.image.load("5.png"),
+        pygame.image.load("6.png"),
+        pygame.image.load("7.png"),
+        pygame.image.load("8.png"),
+        pygame.image.load("9.png"),
+        pygame.image.load("10.png"),
+        ]
+    
     while bandera_correr:
         lista_eventos = pygame.event.get()
         for event in lista_eventos:
@@ -855,20 +956,34 @@ def iniciar_nivel_3():
                 
         autos_a_eliminar = []
 
+        scroll += velocidad_scroll
+        if scroll >= fondo_ancho:
+            scroll = 0
+        
         for i, auto_enemigo in enumerate(autos_enemigos):
             if auto_jugador.rect_jugador.colliderect(auto_enemigo.rect_enemigo):
                 vidas_global -= 1  # Reduce una vida
                 pygame.mixer.music.pause()
                 sonido_explosion.play()
-                # Muestra la imagen de choque
-                x = auto_enemigo.rect_enemigo.centerx - imagen_explosion.get_width() // 2
-                y = auto_enemigo.rect_enemigo.centery - imagen_explosion.get_height() // 2
-                pantalla.blit(imagen_explosion, (x, y))
-                pygame.display.flip()
-                pygame.time.delay(tiempo_explosion)  # Pausa el juego para mostrar la explosión
+
+                # Obtén las coordenadas para la explosión
+                x = auto_enemigo.rect_enemigo.centerx - imagenes_explosion[0].get_width() // 2
+                y = auto_enemigo.rect_enemigo.centery - imagenes_explosion[0].get_height() // 2
+
+                # Muestra cada frame de la explosión en secuencia
+                for frame in imagenes_explosion:
+                    pantalla.blit(frame, (x, y))
+                    pygame.display.flip()
+                    pygame.time.delay(tiempo_entre_frames)
+
+                # Pausa el juego después de mostrar la secuencia de explosión
+                pygame.time.delay(tiempo_explosion)
+
+
                 autos_a_eliminar.append(i)  # Agrega el auto enemigo a la lista de eliminación
                 puntaje_global -= 10  # Descuenta 10 puntos por colisión
-        pygame.mixer.music.unpause()        
+
+        pygame.mixer.music.unpause()
         # Elimina autos enemigos que colisionaron
         autos_enemigos = [auto for i, auto in enumerate(autos_enemigos) if i not in autos_a_eliminar]
 
@@ -888,13 +1003,15 @@ def iniciar_nivel_3():
                 puntaje_global += 20  # Suma 20 puntos por sobrepasar totalmente al auto enemigo
                 autos_adelantados[auto_enemigo] = True  # Marca el auto enemigo como adelantado      
                 
-
-
-        # Actualizar el auto jugador
+        
         auto_jugador.actualizar()
+        fondo.actualizar()
 
+    
         pantalla.fill((0, 0, 0))
         pantalla.blit(imagen, (0, 0))
+        
+        fondo.dibujar(pantalla)
         
         # Dibuja el puntaje y la cantidad de vidas
         fuente = pygame.font.Font(None, 36)
@@ -956,7 +1073,8 @@ def iniciar_nivel_3():
 
         if mostrar_imagen_nivel_completado_flag and len(autos_enemigos) == 0:
             pygame.mixer.music.pause()
-            mostrar_imagen_nivel_completado(pantalla)
+            ingresar_nombre()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()

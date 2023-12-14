@@ -1,6 +1,6 @@
 import pygame
 import random
-
+import math
 class AutoEnemigo:
     def __init__(self, x, y, velocidad):
         self.x = x
@@ -12,7 +12,8 @@ class AutoEnemigo:
         self.rect_enemigo = self.imagen.get_rect()
         self.rect_enemigo.topleft = (x, y)
         self.tiempo_movimiento = 0  # Inicializa el temporizador
-    
+        self.explotando = False
+        
     def mover(self):
         # Controla el movimiento usando un temporizador
         if pygame.time.get_ticks() - self.tiempo_movimiento > 20:  # Ajusta el valor para la velocidad deseada
@@ -21,7 +22,9 @@ class AutoEnemigo:
             self.rect_enemigo.x = self.x  # Actualiza la posición del rectángulo
     def dibujar(self, pantalla):
         pantalla.blit(self.imagen, self.rect_enemigo.topleft)
-
+    
+    def iniciar_explosion(self):
+        self.explotando = True
 class Movimiento:
     def __init__(self, x, y, velocidad):
         self.x = x
@@ -51,7 +54,8 @@ class AutoEnemigo2:
         self.rect_enemigo = self.imagen.get_rect()
         self.rect_enemigo.topleft = (x, y)
         self.tiempo_movimiento = 0  # Inicializa el temporizador
-    
+        self.explotando = False
+        
     def mover(self):
         # Controla el movimiento usando un temporizador
         if pygame.time.get_ticks() - self.tiempo_movimiento > 15:
@@ -74,7 +78,8 @@ class AutoEnemigo3:
         self.rect_enemigo = self.imagen.get_rect()
         self.rect_enemigo.topleft = (x, y)
         self.tiempo_movimiento = 0  # Inicializa el temporizador
-    
+        self.explotando = False
+        
     def mover(self):
         # Controla el movimiento usando un temporizador
         if pygame.time.get_ticks() - self.tiempo_movimiento > 10:
@@ -154,8 +159,18 @@ class AutoJugador(pygame.sprite.Sprite):
         if keys[pygame.K_DOWN]:
             self.rect.y += 5
 
+class Fondo:
+    def __init__(self, imagen, velocidad_scroll):
+        self.imagen = imagen
+        self.velocidad_scroll = velocidad_scroll
+        self.scroll = 0
 
+    def actualizar(self):
+        self.scroll += self.velocidad_scroll
+        if self.scroll >= self.imagen.get_width():
+            self.scroll = 0
 
-
-
+    def dibujar(self, pantalla):
+        for i in range(-1, int(math.ceil(pantalla.get_width() / self.imagen.get_width())) + 1):
+            pantalla.blit(self.imagen, (i * self.imagen.get_width() - self.scroll, 0))
 
